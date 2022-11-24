@@ -53,12 +53,21 @@ async function run() {
             res.send({ acknowledged: false, message: 'User already created' })
         })
 
+        //get products
+        app.get('/products', async (req, res) => {
+            const query = {}
+            const result = await productCollection.find(query).toArray();
+            res.send(result);
+        })
+
         //product collection
         app.post('/products', async (req, res) => {
             const product = req.body;
             const result = await productCollection.insertOne(product);
             res.send(result);
         })
+
+
 
         //jwt set up
         // app.get('/jwt', async (req, res) => {
