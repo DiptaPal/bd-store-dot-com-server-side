@@ -66,6 +66,9 @@ async function run() {
             res.send(buyers)
         })
 
+        
+
+
         //seller collection
         app.get('/sellers', async (req, res) =>{
             const query = {
@@ -73,6 +76,17 @@ async function run() {
             }
             const sellers = await usersCollection.find(query).toArray();
             res.send(sellers)
+        })
+
+        //delete seller
+        app.delete('/sellers/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = {
+                role: 'seller',
+                _id: ObjectID(id)
+            }
+            const result = await usersCollection.deleteOne(filter)
+            res.send(result)
         })
 
         //get products
