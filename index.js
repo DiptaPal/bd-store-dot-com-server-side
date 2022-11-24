@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const jwt = require('jsonwebtoken');
+const { ObjectID } = require('bson');
+const { query } = require('express');
 require('dotenv').config();
 
 const port = process.env.PORT || 5000;
@@ -37,6 +39,7 @@ async function run() {
 
         const usersCollection = client.db('bdStore').collection('users');
         const productCollection = client.db('bdStore').collection('products');
+        const categoryCollection = client.db('bdStore').collection('categories');
 
 
         //user collection
@@ -64,6 +67,20 @@ async function run() {
         app.post('/products', async (req, res) => {
             const product = req.body;
             const result = await productCollection.insertOne(product);
+            res.send(result);
+        })
+
+         //get categories
+         app.get('/categories', async (req, res) => {
+            const query = {}
+            const result = await categoryCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //categories collection
+        app.post('/categories', async (req, res) => {
+            const category = req.body;
+            const result = await categoryCollection.insertOne(category);
             res.send(result);
         })
 
