@@ -57,6 +57,24 @@ async function run() {
             res.send({ acknowledged: false, message: 'User already created' })
         })
 
+        //buyer collection
+        app.get('/buyers', async (req, res) =>{
+            const query = {
+                role : 'buyer'
+            }
+            const buyers = await usersCollection.find(query).toArray();
+            res.send(buyers)
+        })
+
+        //seller collection
+        app.get('/sellers', async (req, res) =>{
+            const query = {
+                role : 'seller'
+            }
+            const sellers = await usersCollection.find(query).toArray();
+            res.send(sellers)
+        })
+
         //get products
         app.get('/products', async (req, res) => {
             const query = {}
