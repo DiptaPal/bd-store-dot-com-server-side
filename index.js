@@ -19,6 +19,7 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xm5hqxk.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+//verify jwt
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -87,18 +88,18 @@ async function run() {
 
 
         //jwt set up
-        // app.get('/jwt', async (req, res) => {
-        //     const email = req.query.email;
-        //     const query = {
-        //         email: email
-        //     }
-        //     const user = await usersCollection.findOne(query);
-        //     if (user) {
-        //         const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, /*{expireIn: '1y'}*/)
-        //         return res.send({ accessToken: token })
-        //     }
-        //     res.status(403).send({ accessToken: '' })
-        // })
+        app.get('/jwt', async (req, res) => {
+            const email = req.query.email;
+            const query = {
+                email: email
+            }
+            const user = await usersCollection.findOne(query);
+            if (user) {
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, /*{expireIn: '1y'}*/)
+                return res.send({ accessToken: token })
+            }
+            res.status(403).send({ accessToken: '' })
+        })
     }
     finally {
         //await client.close();
