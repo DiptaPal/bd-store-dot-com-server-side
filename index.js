@@ -58,6 +58,17 @@ async function run() {
             res.send({ acknowledged: false, message: 'User already created' })
         })
 
+        //user filter by email
+        app.get('/user/:email', async (req, res) => {
+            const userEmail = req.params.email;
+            const query = {
+                email: userEmail
+            }
+            const result = await usersCollection.findOne(query)
+            res.send(result)
+        })
+
+
         //buyer collection
         app.get('/buyers', async (req, res) =>{
             const query = {
@@ -67,12 +78,12 @@ async function run() {
             res.send(buyers)
         })
 
-        //delete seller
-        app.delete('/buyers/:id', async (req, res) => {
-            const id = req.params.id;
+        //delete buyer
+        app.delete('/buyers/:email', async (req, res) => {
+            const buyerEmail = req.params.email;
             const filter = {
                 role: 'buyer',
-                _id: ObjectID(id)
+                email: buyerEmail
             }
             const result = await usersCollection.deleteOne(filter)
             res.send(result)
@@ -88,12 +99,30 @@ async function run() {
             res.send(sellers)
         })
 
+        //verify seller 
+        app.put('/sellers/verified/:email', async (req, res) => {
+            const sellerEmail = req.params.email;
+            const filter = { 
+                email: sellerEmail
+            }
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: {
+                    verified: 'true'
+                }
+            }
+            const set = await productCollection.updateMany(filter, updatedDoc, options);
+
+            const result = await usersCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
+        })
+
         //delete seller
-        app.delete('/sellers/:id', async (req, res) => {
-            const id = req.params.id;
+        app.delete('/sellers/:email', async (req, res) => {
+            const sellerEmail = req.params.email;
             const filter = {
                 role: 'seller',
-                _id: ObjectID(id)
+                email: sellerEmail
             }
             const result = await usersCollection.deleteOne(filter)
             res.send(result)
@@ -128,8 +157,16 @@ async function run() {
             res.send(categoryProduct)
         })
 
+        //user base product
+        app.get('/myProducts', async(req, res) => {
+            const customerEmail = req.query.email;
+            const query = {
+                email : customerEmail
+            }
+            const result = await productCollection.find(query).toArray();
+            res.send(result)
+        })
 
-        
 
          //get categories
          app.get('/categories', async (req, res) => {
