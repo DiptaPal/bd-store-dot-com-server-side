@@ -66,7 +66,16 @@ async function run() {
             res.send(buyers)
         })
 
-        
+        //delete seller
+        app.delete('/buyers/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = {
+                role: 'buyer',
+                _id: ObjectID(id)
+            }
+            const result = await usersCollection.deleteOne(filter)
+            res.send(result)
+        })
 
 
         //seller collection
@@ -98,9 +107,25 @@ async function run() {
 
         //product collection
         app.post('/products', async (req, res) => {
-            const product = req.body;
+            let product = req.body;
+            const categoryQuery = {
+                _id: ObjectID(product.categoryId)
+            }
+            const categories = await categoryCollection.find(categoryQuery).toArray();
+
+            const catName = categories[0].categoryName;
+            product.categoryName = catName
+            
             const result = await productCollection.insertOne(product);
             res.send(result);
+        })
+
+        //category base product 
+        app.get('/products/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {categoryId: id}
+            const categoryProduct = await productCollection.find(query).toArray();
+            res.send(categoryProduct)
         })
 
          //get categories
