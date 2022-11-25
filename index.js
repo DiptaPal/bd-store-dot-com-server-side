@@ -41,6 +41,7 @@ async function run() {
         const usersCollection = client.db('bdStore').collection('users');
         const productCollection = client.db('bdStore').collection('products');
         const categoryCollection = client.db('bdStore').collection('categories');
+        const bookingCollection = client.db('bdStore').collection('bookingProducts');
 
 
         //user collection
@@ -111,9 +112,8 @@ async function run() {
             const categoryQuery = {
                 _id: ObjectID(product.categoryId)
             }
-            const categories = await categoryCollection.find(categoryQuery).toArray();
-
-            const catName = categories[0].categoryName;
+            const categories = await categoryCollection.find(categoryQuery);
+            const catName = categories.categoryName;
             product.categoryName = catName
             
             const result = await productCollection.insertOne(product);
@@ -128,12 +128,43 @@ async function run() {
             res.send(categoryProduct)
         })
 
+
+        
+
          //get categories
          app.get('/categories', async (req, res) => {
             const query = {}
             const result = await categoryCollection.find(query).toArray();
             res.send(result);
         })
+
+        //booking collection 
+        app.post('/bookingProducts', async(req, res) => {
+            const bookingProducts = req.body;
+            const query = {
+                productName: bookingProducts.productName,
+                productId: bookingProducts.productId,
+                customerEmail: bookingProducts.customerEmail,
+            }
+            const alreadyBooked = await bookingCollection.find(query).toArray();
+            if(alreadyBooked.length){
+                const message = "Already Booked! Please check your Dashboard";
+                return res.send({ acknowledged: false, message })
+            }
+            const result = await bookingCollection.insertOne(bookingProducts);
+            res.send(result)
+        })
+
+        //user base product
+        app.get('/myOrders', async(req, res) => {
+            const email = req.query.email;
+            const query = {
+                customerEmail : email
+            }
+            const result = await bookingCollection.find(query).toArray();
+            res.send(result)
+        })
+
 
         //categories collection
         app.post('/categories', async (req, res) => {
