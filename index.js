@@ -58,11 +58,11 @@ async function run() {
             }
             res.send({ acknowledged: false, message: 'User already created' })
         })
-        
+
         //buyer collection
-        app.get('/buyers', async (req, res) =>{
+        app.get('/buyers', async (req, res) => {
             const query = {
-                role : 'buyer'
+                role: 'buyer'
             }
             const buyers = await usersCollection.find(query).toArray();
             res.send(buyers)
@@ -81,9 +81,9 @@ async function run() {
 
 
         //seller collection
-        app.get('/sellers', async (req, res) =>{
+        app.get('/sellers', async (req, res) => {
             const query = {
-                role : 'seller'
+                role: 'seller'
             }
             const sellers = await usersCollection.find(query).toArray();
             res.send(sellers)
@@ -92,7 +92,7 @@ async function run() {
         //verify seller 
         app.put('/sellers/verified/:email', async (req, res) => {
             const sellerEmail = req.params.email;
-            const filter = { 
+            const filter = {
                 email: sellerEmail
             }
             const options = { upsert: true }
@@ -101,7 +101,11 @@ async function run() {
                     verified: 'true'
                 }
             }
-            const set = await productCollection.updateMany(filter, updatedDoc, options);
+            const productHave = await productCollection.find(filter).toArray()
+
+            if (productHave.length) {
+                const set = await productCollection.updateMany(filter, updatedDoc, options);
+            }
 
             const result = await usersCollection.updateOne(filter, updatedDoc, options);
             res.send(result);
@@ -126,21 +130,21 @@ async function run() {
         })
 
         //edit products
-        app.get('/editProduct/:id', async(req, res) =>{
-            const id  = req.params.id;
+        app.get('/editProduct/:id', async (req, res) => {
+            const id = req.params.id;
             const query = {
-                _id : ObjectId(id)
+                _id: ObjectId(id)
             }
             const result = await productCollection.findOne(query)
             res.send(result)
         })
 
         //edit product details
-        app.patch('/updateProduct/:id', async(req, res) =>{
-            const id  = req.params.id;
+        app.patch('/updateProduct/:id', async (req, res) => {
+            const id = req.params.id;
             const product = req.body;
             const query = {
-                _id : ObjectId(id)
+                _id: ObjectId(id)
             }
 
             const categoryQuery = {
@@ -150,7 +154,7 @@ async function run() {
             const catName = categories.categoryName;
 
             const updatedDoc = {
-                $set : {
+                $set: {
                     username: product.username,
                     email: product.email,
                     profileImage: product.profileImage,
@@ -173,10 +177,10 @@ async function run() {
         })
 
         //product delete based on id
-        app.delete('/products/:id', async(req, res) =>{
+        app.delete('/products/:id', async (req, res) => {
             const id = req.params.id;
             const query = {
-                _id : ObjectId(id)
+                _id: ObjectId(id)
             }
             const result = await productCollection.deleteOne(query);
             res.send(result)
@@ -190,16 +194,26 @@ async function run() {
             }
             const categories = await categoryCollection.findOne(categoryQuery);
             const catName = categories.categoryName;
-            product.categoryName = catName
-            
+            product.categoryName = catName;
+
+            const userQuery = {
+                email: product.email
+            }
+            const user = await usersCollection.findOne(userQuery);
+            const isVerified = user.verified;
+
+            if (isVerified === 'true') {
+                product.verified = 'true'
+            }
+
             const result = await productCollection.insertOne(product);
             res.send(result);
         })
 
         //make advertise 
-        app.put('/makeAdvertise/:id', async(req, res) =>{
+        app.put('/makeAdvertise/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = { 
+            const filter = {
                 _id: ObjectId(id),
             }
             const options = { upsert: true }
@@ -214,41 +228,41 @@ async function run() {
 
         //gate advertise product
 
-        app.get('/advertiseProduct', async(req, res) => {
+        app.get('/advertiseProduct', async (req, res) => {
             const query = {
-                isAdvertise : 'true'
+                isAdvertise: 'true'
             }
             const result = await productCollection.find(query).toArray()
             res.send(result)
         })
 
         //category base product 
-        app.get('/category/:id', async(req, res) => {
+        app.get('/category/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {categoryId: id}
+            const query = { categoryId: id }
             const categoryProduct = await productCollection.find(query).toArray();
             res.send(categoryProduct)
         })
 
         //user base product
-        app.get('/myProducts', async(req, res) => {
+        app.get('/myProducts', async (req, res) => {
             const customerEmail = req.query.email;
             const query = {
-                email : customerEmail
+                email: customerEmail
             }
             const result = await productCollection.find(query).toArray();
             res.send(result)
         })
 
-         //get categories
-         app.get('/categories', async (req, res) => {
+        //get categories
+        app.get('/categories', async (req, res) => {
             const query = {}
             const result = await categoryCollection.find(query).toArray();
             res.send(result);
         })
 
         //booking collection 
-        app.post('/bookingProducts', async(req, res) => {
+        app.post('/bookingProducts', async (req, res) => {
             const bookingProducts = req.body;
             const query = {
                 productName: bookingProducts.productName,
@@ -256,7 +270,7 @@ async function run() {
                 customerEmail: bookingProducts.customerEmail,
             }
             const alreadyBooked = await bookingCollection.find(query).toArray();
-            if(alreadyBooked.length){
+            if (alreadyBooked.length) {
                 const message = "Already Booked! Please check your Dashboard";
                 return res.send({ acknowledged: false, message })
             }
@@ -265,10 +279,10 @@ async function run() {
         })
 
         //get booked product base on id
-        app.get('/myOrder/:id', async(req, res) =>{
+        app.get('/myOrder/:id', async (req, res) => {
             const id = req.params.id;
             const query = {
-                _id : ObjectId(id)
+                _id: ObjectId(id)
             }
             const result = await bookingCollection.findOne(query);
             res.send(result)
@@ -285,10 +299,10 @@ async function run() {
         })
 
         //user base product
-        app.get('/myOrders', async(req, res) => {
+        app.get('/myOrders', async (req, res) => {
             const email = req.query.email;
             const query = {
-                customerEmail : email
+                customerEmail: email
             }
             const result = await bookingCollection.find(query).toArray();
             res.send(result)
@@ -302,7 +316,7 @@ async function run() {
             res.send(result);
         })
 
-        app.delete('/categories/:id', async (req, res) =>{
+        app.delete('/categories/:id', async (req, res) => {
             const id = req.params.id;
             const query = {
                 _id: ObjectId(id)
@@ -312,7 +326,7 @@ async function run() {
         })
 
         //report products
-        app.post('/reportedProduct', async(req, res) => {
+        app.post('/reportedProduct', async (req, res) => {
             const reportProducts = req.body;
             const query = {
                 productName: reportProducts.productName,
@@ -320,7 +334,7 @@ async function run() {
                 userEmail: reportProducts.userEmail,
             }
             const alreadyReport = await reportedProductCollection.find(query).toArray();
-            if(alreadyReport.length){
+            if (alreadyReport.length) {
                 const message = "Already reported!";
                 return res.send({ acknowledged: false, message })
             }
@@ -329,22 +343,22 @@ async function run() {
         })
 
         //get reported product
-        app.get('/reportedProducts', async(req, res) =>{
+        app.get('/reportedProducts', async (req, res) => {
             const query = {}
             const result = await reportedProductCollection.find(query).toArray()
             res.send(result)
         })
 
         //delete reported product
-        app.delete('/reportedProducts/:id', async(req, res) =>{
-            const id= req.params.id;
+        app.delete('/reportedProducts/:id', async (req, res) => {
+            const id = req.params.id;
             const query = {
                 _id: ObjectId(id)
             }
             const findReportProduct = await reportedProductCollection.findOne(query);
             const productId = findReportProduct.productId;
-            const findProduct = await productCollection.findOne({_id: ObjectId(productId)});
-            
+            const findProduct = await productCollection.findOne({ _id: ObjectId(productId) });
+
             const result1 = await reportedProductCollection.deleteOne(findReportProduct);
             const result2 = await productCollection.deleteOne(findProduct);
 
@@ -383,33 +397,33 @@ async function run() {
         })
 
         //stripe setup
-        app.post('/create-payment-intent', async(req, res) =>{
+        app.post('/create-payment-intent', async (req, res) => {
             const booking = req.body;
             const price = booking.productPrice;
             const amount = price * 100;
-            
+
             const paymentIntent = await stripe.paymentIntents.create({
                 currency: 'usd',
                 amount: amount,
-                "payment_method_types" : [
+                "payment_method_types": [
                     "card"
-                  ],
+                ],
             })
             res.send({
-                clientSecret :  paymentIntent.client_secret
+                clientSecret: paymentIntent.client_secret
             })
         })
 
         //payment collection
-        app.post('/payments', async(req, res) =>{
+        app.post('/payments', async (req, res) => {
             const payment = req.body;
             const result = await paymentsCollection.insertOne(payment)
             const id = payment.bookingId;
-            
+
             const prodId = payment.productId;
 
-            const filterBooking = {_id : ObjectId(id)}
-            const filterProduct = {_id: ObjectId(prodId)}
+            const filterBooking = { _id: ObjectId(id) }
+            const filterProduct = { _id: ObjectId(prodId) }
             const updatedBooking = {
                 $set: {
                     paid: true,
