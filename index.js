@@ -41,6 +41,7 @@ async function run() {
         const productCollection = client.db('bdStore').collection('products');
         const categoryCollection = client.db('bdStore').collection('categories');
         const bookingCollection = client.db('bdStore').collection('bookingProducts');
+        const wishlistCollection = client.db('bdStore').collection('wishlists');
         const paymentsCollection = client.db('bdStore').collection('payments');
         const reportedProductCollection = client.db('bdStore').collection('reportedProducts');
 
@@ -278,6 +279,56 @@ async function run() {
             res.send(result)
         })
 
+        //wishlist collection 
+        app.post('/wishlists', async (req, res) => {
+            const wishlists = req.body;
+            const query = {
+                productName: wishlists.productName,
+                productId: wishlists.productId,
+                customerEmail: wishlists.customerEmail,
+            }
+            const alreadyHave = await wishlistCollection.find(query).toArray();
+            if (alreadyHave.length) {
+                const message = "Already Have! Please check your Dashboard";
+                return res.send({ acknowledged: false, message })
+            }
+            const result = await wishlistCollection.insertOne(wishlists);
+            res.send(result)
+        })
+
+        //get wishlist products
+        app.get('/wishlists', async (req, res) => {
+            const email = req.query.email;
+            const query = {
+                customerEmail: email
+            }
+            const result = await wishlistCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        //delete booked product
+        app.delete('/wishlists/delete', async (req, res) => {
+            const id = req.query.id;
+            const filter = {
+                _id: ObjectId(id)
+            }
+            const result = await wishlistCollection.deleteOne(filter)
+            res.send(result)
+        })
+
+        //get wishlist product base on id
+        app.get('/wishlists/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {
+                _id: ObjectId(id)
+            }
+            const result = await wishlistCollection.findOne(query);
+            res.send(result)
+        })
+
+
+
+
         //get booked product base on id
         app.get('/myOrder/:id', async (req, res) => {
             const id = req.params.id;
@@ -436,8 +487,15 @@ async function run() {
                     status: 'sold'
                 }
             }
+
             const updatedResult1 = await bookingCollection.updateOne(filterBooking, updatedBooking)
             const updatedResult2 = await productCollection.updateOne(filterProduct, updatedProduct)
+            const updatedResult3 = await wishlistCollection.updateOne(filterBooking, updatedBooking)
+
+            const findWishlistProduct = await wishlistCollection.findOne(filterBooking);
+
+            const addBookingProduct = await bookingCollection.insertOne(findWishlistProduct);
+            const deleteWishlist = await wishlistCollection.deleteOne(filterBooking)
 
             res.send(result)
         })
