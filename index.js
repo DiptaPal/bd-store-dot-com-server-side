@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
-const { ObjectID } = require('bson');
-const { query } = require('express');
 require('dotenv').config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const port = process.env.PORT || 5000;
 
@@ -42,6 +41,7 @@ async function run() {
         const productCollection = client.db('bdStore').collection('products');
         const categoryCollection = client.db('bdStore').collection('categories');
         const bookingCollection = client.db('bdStore').collection('bookingProducts');
+        const paymentsCollection = client.db('bdStore').collection('payments');
 
 
         //user collection
@@ -57,18 +57,7 @@ async function run() {
             }
             res.send({ acknowledged: false, message: 'User already created' })
         })
-
-        //user filter by email
-        app.get('/user/:email', async (req, res) => {
-            const userEmail = req.params.email;
-            const query = {
-                email: userEmail
-            }
-            const result = await usersCollection.findOne(query)
-            res.send(result)
-        })
-
-
+        
         //buyer collection
         app.get('/buyers', async (req, res) =>{
             const query = {
@@ -135,13 +124,70 @@ async function run() {
             res.send(result);
         })
 
+        //edit products
+        app.get('/editProduct/:id', async(req, res) =>{
+            const id  = req.params.id;
+            const query = {
+                _id : ObjectId(id)
+            }
+            const result = await productCollection.findOne(query)
+            res.send(result)
+        })
+
+        //edit product details
+        app.patch('/updateProduct/:id', async(req, res) =>{
+            const id  = req.params.id;
+            const product = req.body;
+            const query = {
+                _id : ObjectId(id)
+            }
+
+            const categoryQuery = {
+                _id: ObjectId(product.categoryId)
+            }
+            const categories = await categoryCollection.findOne(categoryQuery);
+            const catName = categories.categoryName;
+
+            const updatedDoc = {
+                $set : {
+                    username: product.username,
+                    email: product.email,
+                    profileImage: product.profileImage,
+                    productName: product.productName,
+                    phoneNumber: product.phoneNumber,
+                    productImage: product.productImage,
+                    location: product.location,
+                    quality: product.quality,
+                    categoryId: product.categoryId,
+                    resalePrice: product.resalePrice,
+                    originalPrice: product.originalPrice,
+                    yearsOfUsed: product.yearsOfUsed,
+                    description: product.description,
+                    categoryName: catName
+                }
+            }
+
+            const result = await productCollection.updateOne(query, updatedDoc)
+            res.send(result)
+        })
+
+        //product delete based on id
+        app.delete('/products/:id', async(req, res) =>{
+            const id = req.params.id;
+            const query = {
+                _id : ObjectId(id)
+            }
+            const result = await productCollection.deleteOne(query);
+            res.send(result)
+        })
+
         //product collection
         app.post('/products', async (req, res) => {
             let product = req.body;
             const categoryQuery = {
-                _id: ObjectID(product.categoryId)
+                _id: ObjectId(product.categoryId)
             }
-            const categories = await categoryCollection.find(categoryQuery);
+            const categories = await categoryCollection.findOne(categoryQuery);
             const catName = categories.categoryName;
             product.categoryName = catName
             
@@ -149,8 +195,34 @@ async function run() {
             res.send(result);
         })
 
+        //make advertise 
+        app.put('/makeAdvertise/:id', async(req, res) =>{
+            const id = req.params.id;
+            const filter = { 
+                _id: ObjectId(id),
+            }
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: {
+                    isAdvertise: 'true'
+                }
+            }
+            const result = await productCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
+        })
+
+        //gate advertise product
+
+        app.get('/advertiseProduct', async(req, res) => {
+            const query = {
+                isAdvertise : 'true'
+            }
+            const result = await productCollection.find(query).toArray()
+            res.send(result)
+        })
+
         //category base product 
-        app.get('/products/:id', async(req, res) => {
+        app.get('/category/:id', async(req, res) => {
             const id = req.params.id;
             const query = {categoryId: id}
             const categoryProduct = await productCollection.find(query).toArray();
@@ -166,7 +238,6 @@ async function run() {
             const result = await productCollection.find(query).toArray();
             res.send(result)
         })
-
 
          //get categories
          app.get('/categories', async (req, res) => {
@@ -189,6 +260,26 @@ async function run() {
                 return res.send({ acknowledged: false, message })
             }
             const result = await bookingCollection.insertOne(bookingProducts);
+            res.send(result)
+        })
+
+        //get booked product base on id
+        app.get('/myOrder/:id', async(req, res) =>{
+            const id = req.params.id;
+            const query = {
+                _id : ObjectId(id)
+            }
+            const result = await bookingCollection.findOne(query);
+            res.send(result)
+        })
+
+        //delete booked product
+        app.delete('/myOrders/delete', async (req, res) => {
+            const id = req.query.id;
+            const filter = {
+                _id: ObjectId(id)
+            }
+            const result = await bookingCollection.deleteOne(filter)
             res.send(result)
         })
 
@@ -240,6 +331,52 @@ async function run() {
             }
             const user = await usersCollection.findOne(query);
             res.send({ isBuyer: user?.role === 'buyer' })
+        })
+
+        //stripe setup
+        app.post('/create-payment-intent', async(req, res) =>{
+            const booking = req.body;
+            const price = booking.productPrice;
+            const amount = price * 100;
+            
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: 'usd',
+                amount: amount,
+                "payment_method_types" : [
+                    "card"
+                  ],
+            })
+            res.send({
+                clientSecret :  paymentIntent.client_secret
+            })
+        })
+
+        //payment collection
+        app.post('/payments', async(req, res) =>{
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment)
+            const id = payment.bookingId;
+            
+            const prodId = payment.productId;
+
+            const filterBooking = {_id : ObjectId(id)}
+            const filterProduct = {_id: ObjectId(prodId)}
+            const updatedBooking = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+
+            const updatedProduct = {
+                $set: {
+                    status: 'sold'
+                }
+            }
+            const updatedResult1 = await bookingCollection.updateOne(filterBooking, updatedBooking)
+            const updatedResult2 = await productCollection.updateOne(filterProduct, updatedProduct)
+
+            res.send(result)
         })
 
         //jwt set up
