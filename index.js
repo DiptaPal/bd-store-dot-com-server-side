@@ -42,6 +42,7 @@ async function run() {
         const categoryCollection = client.db('bdStore').collection('categories');
         const bookingCollection = client.db('bdStore').collection('bookingProducts');
         const paymentsCollection = client.db('bdStore').collection('payments');
+        const reportedProductCollection = client.db('bdStore').collection('reportedProducts');
 
 
         //user collection
@@ -301,6 +302,54 @@ async function run() {
             res.send(result);
         })
 
+        app.delete('/categories/:id', async (req, res) =>{
+            const id = req.params.id;
+            const query = {
+                _id: ObjectId(id)
+            }
+            const result = await categoryCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        //report products
+        app.post('/reportedProduct', async(req, res) => {
+            const reportProducts = req.body;
+            const query = {
+                productName: reportProducts.productName,
+                productId: reportProducts.productId,
+                userEmail: reportProducts.userEmail,
+            }
+            const alreadyReport = await reportedProductCollection.find(query).toArray();
+            if(alreadyReport.length){
+                const message = "Already reported!";
+                return res.send({ acknowledged: false, message })
+            }
+            const result = await reportedProductCollection.insertOne(reportProducts);
+            res.send(result)
+        })
+
+        //get reported product
+        app.get('/reportedProducts', async(req, res) =>{
+            const query = {}
+            const result = await reportedProductCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        //delete reported product
+        app.delete('/reportedProducts/:id', async(req, res) =>{
+            const id= req.params.id;
+            const query = {
+                _id: ObjectId(id)
+            }
+            const findReportProduct = await reportedProductCollection.findOne(query);
+            const productId = findReportProduct.productId;
+            const findProduct = await productCollection.findOne({_id: ObjectId(productId)});
+            
+            const result1 = await reportedProductCollection.deleteOne(findReportProduct);
+            const result2 = await productCollection.deleteOne(findProduct);
+
+            res.send(result1)
+        })
 
 
         //admin role checkout
