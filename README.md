@@ -53,6 +53,18 @@
 * Sweet Alert
 * React Simple Typewriter
 
+
+# Login Credentials
+| Email                  | Password      | Role           |
+| -------------          |:-------------:|:-------------: |
+| admin@gmail.com     | A1d2m3i4n5@A     | Admin          |
+| test1@gmail.com | Test1@     |  Buyer        |
+| test1@gmail.com      | Test2@     | Seller          |
+
+
+
+
+
 Hi there, It's me, Dipta Pal. I am trying to learn Web Development from Bangladesh.
 
 :coffee: &emsp;Connect with me!
