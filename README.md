@@ -7,7 +7,7 @@
 ## Server Side Repository Link: https://github.com/DiptaPal/bd-store-dot-com-server-side
 # <b><u>About:</u><b>
 
-<p>BD-Store.com is a product reseller website. Here buyer can easily buy their necessary product and seller can easily sell their unnecessary, second-hand products. Also they seller can  advertise their product. But we are always conscious our customer satisfaction. If any product quality is bad and customer report that product, we delete that product as soon as possible. If any buyer and seller are fraud, then strictly banned that buyer and seller.<p> 
+<p>BD-Store.com is a product reseller website. Here buyer can easily buy their necessary product and seller can easily sell their unnecessary, second-hand products. Also they seller can  advertise their product. But we are always conscious our customer satisfaction. If any product quality is bad and customer report that product, we delete that product as soon as possible. If any buyer and seller are fraud, then strictly banned that buyer and seller. <p> 
 
 ## <u>Features:</u>
 * User Authentication
