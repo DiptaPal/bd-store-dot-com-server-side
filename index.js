@@ -16,8 +16,8 @@ app.use(
     cors({
         origin: [
             "http://localhost:3000",
-            "db-store-5e7c8.web.app",
-            "db-store-5e7c8.firebaseapp.com",
+            "https://db-store-5e7c8.web.app",
+            "https://db-store-5e7c8.firebaseapp.com",
         ],
         credentials: true,
     })
